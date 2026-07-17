@@ -30,6 +30,13 @@ func parseProcCpuInfo(cpuInfoString string, architecture string) ([]procCpuInfo,
 		}
 		return cpuInfo, nil
 
+	case S390x:
+		cpuInfo, err := parseProcCpuInfoS390x(cpuInfoString)
+		if err != nil {
+			return nil, fmt.Errorf("s390x: %w", err)
+		}
+		return cpuInfo, nil
+
 	default:
 		return nil, fmt.Errorf("unsupported architecture: %s", architecture)
 
@@ -242,6 +249,46 @@ func parseProcCpuInfoRiscv64(cpuInfoString string) ([]procCpuInfo, error) {
 			flags := strings.Split(value, "_")
 			parsedCpus[cpuIndex].Isa = append(parsedCpus[cpuIndex].Isa, flags...)
 
+		}
+	}
+
+	return parsedCpus, nil
+}
+
+func parseProcCpuInfoS390x(cpuInfoString string) ([]procCpuInfo, error) {
+	var parsedCpus []procCpuInfo
+
+	lines := strings.Split(cpuInfoString, "\n")
+	cpuIndex := -1
+
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		fields := strings.SplitN(line, ":", 2)
+		if len(fields) != 2 {
+			return nil, fmt.Errorf("malformed cpuinfo line: %q", line)
+		}
+		key := strings.TrimSpace(fields[0]) // remove \t between key and colon
+		value := strings.TrimSpace(fields[1])
+
+		// New cpu block
+		if key == "cpu number" {
+			newCpu := procCpuInfo{}
+			newCpu.Architecture = S390x
+			parsedCpus = append(parsedCpus, newCpu)
+			cpuIndex = len(parsedCpus) - 1
+		}
+
+		switch key {
+		case "cpu number":
+			processorIndex, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			parsedCpus[cpuIndex].Processor = processorIndex
+			parsedCpus[cpuIndex].ManufacturerId = S390x
 		}
 	}
 

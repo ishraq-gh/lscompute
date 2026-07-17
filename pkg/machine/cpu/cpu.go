@@ -102,6 +102,9 @@ func cpuInfoFromProc(procCpus []procCpuInfo) ([]CpuInfo, error) {
 		} else if procCpu.Architecture == Riscv64 {
 			cpuInfo.Architecture = procCpu.Architecture
 			cpuInfo.Isa = procCpu.Isa
+		} else if procCpu.Architecture == S390x {
+			cpuInfo.Architecture = procCpu.Architecture
+			cpuInfo.ManufacturerId = procCpu.ManufacturerId
 		} else {
 			return nil, fmt.Errorf("unsupported architecture: %s", procCpu.Architecture)
 		}
